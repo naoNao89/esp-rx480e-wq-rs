@@ -1,0 +1,20 @@
+# Build outputs
+target/
+**/target/
+
+# ESP flash artifacts
+*.bin
+*.elf
+*.map
+
+# Editor / OS noise
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Local tool state
+.codegraph/
+.opencode/
+.agent-browser/

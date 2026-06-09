@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - run: cargo fmt --all -- --check
+
+  driver-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu
+      - run: cargo test -p rx480e-wq-driver --target x86_64-unknown-linux-gnu
+
+  esp32c3-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: riscv32imc-unknown-none-elf
+      - run: cargo check -p esp32-c3-rx480e-wq --target riscv32imc-unknown-none-elf
+
+  xml-svg-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: |
+          python3 - <<'PY'
+          import pathlib, sys, xml.etree.ElementTree as ET
+          paths = [pathlib.Path('assets/rx480e-wq-esp32-wiring.svg'), pathlib.Path('hardware/rx480e-wq.xml')]
+          for path in paths:
+              try:
+                  ET.parse(path)
+              except ET.ParseError as e:
+                  print(f'{path}: {e}')
+                  sys.exit(1)
+          print('xml/svg lint ok')
+          PY

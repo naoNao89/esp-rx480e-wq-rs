@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<device name="RX480-E-WQ" family="RX480E-4" band="433.92MHz">
+  <overview>
+    <description>433.92 MHz learning-code receiver/decoder module with four decoded outputs and a valid-transmission indicator.</description>
+    <notes>
+      <note>ESP32 only observes D0-D3 and VT outputs.</note>
+      <note>The RX480 module stores learned codes internally.</note>
+      <note>VT is output-only from module to MCU.</note>
+    </notes>
+  </overview>
+
+  <pins>
+    <pin name="GND" direction="power" signal="ground" />
+    <pin name="+V" direction="power" signal="3.3V-5V" />
+    <pin name="D0" direction="out" signal="decoded channel 0" behavior="high when channel 1 is enabled" />
+    <pin name="D1" direction="out" signal="decoded channel 1" behavior="high when channel 2 is enabled" />
+    <pin name="D2" direction="out" signal="decoded channel 2" behavior="high when channel 3 is enabled" />
+    <pin name="D3" direction="out" signal="decoded channel 3" behavior="high when channel 4 is enabled" />
+    <pin name="VT" direction="out" signal="valid transmission" behavior="high while a valid frame is being received" />
+  </pins>
+
+  <wiring target="ESP32-C3">
+    <connection from="D0" to="GPIO0" />
+    <connection from="D1" to="GPIO1" />
+    <connection from="D2" to="GPIO3" />
+    <connection from="D3" to="GPIO4" />
+    <connection from="VT" to="GPIO5" />
+  </wiring>
+
+  <behavior>
+    <mode presses="1" name="momentary" description="learn/pair next code as momentary" />
+    <mode presses="2" name="toggle" description="learn/pair next code as toggle/self-lock" />
+    <mode presses="3" name="interlock" description="learn/pair next code as interlock/latching" />
+    <clear presses="8" description="clear all learned codes" />
+    <output note="During learn/clear, VT may pulse as part of module status indication; treat VT-only events as observations, not write acknowledgements." />
+  </behavior>
+</device>

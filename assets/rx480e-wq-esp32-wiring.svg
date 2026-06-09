@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1700" height="1120" viewBox="0 0 1700 1120" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+<title id="title">RX480-E-WQ pinout and ESP32-C3 wiring SVG</title>
+<desc id="desc">Editable SVG diagram for RX480-E-WQ 433 MHz receiver module pinout and safe 3.3V ESP32-C3 wiring.</desc>
+<defs>
+<style>
+.bg { fill:#f8fafc; }
+.board { fill:#119bb2; stroke:#07586a; stroke-width:4; rx:18; }
+.shadow { fill:#0a4a5a; opacity:.12; }
+.pad { fill:#eef2f7; stroke:#334155; stroke-width:3; }
+.pin { fill:#b9ae8f; stroke:#5b5140; stroke-width:3; }
+.pin-strip { fill:#111827; }
+.hole { fill:#0b7284; stroke:#064452; stroke-width:2; opacity:.8; }
+.text { font-family:Inter,Arial,Helvetica,sans-serif; fill:#17202a; }
+.title { font-size:48px; font-weight:850; }
+.subtitle { font-size:26px; fill:#475569; }
+.label { font-size:30px; font-weight:800; }
+.small { font-size:24px; }
+.tiny { font-size:18px; }
+.white { fill:#f8fafc; }
+.trace { fill:none; stroke:#064452; stroke-width:5; stroke-linecap:round; stroke-linejoin:round; }
+.antenna { fill:none; stroke:#111827; stroke-width:13; stroke-linecap:round; }
+.mcu { fill:#ffffff; stroke:#334155; stroke-width:4; rx:18; }
+.mcu-pin { fill:#e2e8f0; stroke:#64748b; stroke-width:2; rx:8; }
+.chip { fill:#1e293b; stroke:#0f172a; stroke-width:3; rx:8; }
+.wire { fill:none; stroke-width:7; stroke-linecap:round; stroke-linejoin:round; }
+.line-gnd { stroke:#334155; }
+.line-vcc { stroke:#ef4444; }
+.line-d0 { stroke:#f59e0b; }
+.line-d1 { stroke:#10b981; }
+.line-d2 { stroke:#3b82f6; }
+.line-d3 { stroke:#8b5cf6; }
+.line-vt { stroke:#ec4899; }
+.tag { fill:#f8fafc; stroke:#cbd5e1; stroke-width:2; rx:8; }
+.box { fill:#ffffff; stroke:#cbd5e1; stroke-width:3; rx:16; }
+.warning { fill:#fff7ed; stroke:#fb923c; stroke-width:3; rx:16; }
+.pin-title { font-size:22px; font-weight:800; fill:#f8fafc; }
+</style>
+</defs>
+<rect class="bg" width="1700" height="1120"/>
+<text x="70" y="70" class="text title">RX480-E-WQ 433 MHz — ESP32-C3 wiring</text>
+
+<g id="rx480" transform="translate(70,180)">
+<rect class="shadow" x="12" y="16" width="880" height="300" rx="18"/>
+<rect class="board" x="0" y="0" width="880" height="300" rx="18"/>
+<text x="38" y="70" class="text white" style="font-size:48px;font-family:Georgia,serif;font-weight:700;">RX480-E-WQ</text>
+<text x="585" y="66" class="text white label">ANT</text>
+<circle class="hole" cx="55" cy="125" r="6"/><circle class="hole" cx="120" cy="115" r="5"/><circle class="hole" cx="190" cy="130" r="5"/><circle class="hole" cx="270" cy="105" r="5"/><circle class="hole" cx="350" cy="122" r="5"/><circle class="hole" cx="430" cy="102" r="5"/><circle class="hole" cx="510" cy="120" r="5"/><circle class="hole" cx="590" cy="105" r="5"/><circle class="hole" cx="680" cy="126" r="5"/><circle class="hole" cx="760" cy="98" r="5"/><circle class="hole" cx="820" cy="145" r="5"/>
+<circle class="pad" cx="825" cy="55" r="18"/>
+<path class="antenna" d="M825 55 C862 20 870 -38 805 -78"/>
+<path class="trace" d="M590 210 C645 210 640 255 710 255"/>
+<path class="trace" d="M620 226 C670 226 660 274 742 274" opacity=".7"/>
+<rect class="pin-strip" x="52" y="234" width="604" height="42" rx="9"/>
+<g transform="translate(90,188)"><text class="pin-title" x="-25" y="-20">GND</text><circle class="pad" cx="0" cy="28" r="20"/><rect class="pin" x="-10" y="84" width="20" height="150" rx="6"/></g>
+<g transform="translate(178,188)"><text class="pin-title" x="-22" y="-20">+V</text><circle class="pad" cx="0" cy="28" r="20"/><rect class="pin" x="-10" y="84" width="20" height="150" rx="6"/></g>
+<g transform="translate(266,188)"><text class="pin-title" x="-20" y="-20">D0</text><circle class="pad" cx="0" cy="28" r="20"/><rect class="pin" x="-10" y="84" width="20" height="150" rx="6"/></g>
+<g transform="translate(354,188)"><text class="pin-title" x="-20" y="-20">D1</text><circle class="pad" cx="0" cy="28" r="20"/><rect class="pin" x="-10" y="84" width="20" height="150" rx="6"/></g>
+<g transform="translate(442,188)"><text class="pin-title" x="-20" y="-20">D2</text><circle class="pad" cx="0" cy="28" r="20"/><rect class="pin" x="-10" y="84" width="20" height="150" rx="6"/></g>
+<g transform="translate(530,188)"><text class="pin-title" x="-20" y="-20">D3</text><circle class="pad" cx="0" cy="28" r="20"/><rect class="pin" x="-10" y="84" width="20" height="150" rx="6"/></g>
+<g transform="translate(618,188)"><text class="pin-title" x="-18" y="-20">VT</text><circle class="pad" cx="0" cy="28" r="20"/><rect class="pin" x="-10" y="84" width="20" height="150" rx="6"/></g>
+</g>
+
+<g id="mcu" transform="translate(1130,170)">
+<rect class="mcu" x="0" y="0" width="460" height="625" rx="18"/>
+<text x="118" y="58" class="text label">ESP32-C3</text>
+<text x="86" y="94" class="text small" fill="#475569">3.3V GPIO wiring</text>
+<rect class="chip" x="155" y="210" width="175" height="160"/>
+<text x="195" y="300" class="text white label">ESP32</text>
+<rect class="mcu-pin" x="-35" y="135" width="104" height="38"/><text x="-18" y="162" class="text small">GND</text>
+<rect class="mcu-pin" x="-35" y="205" width="104" height="38"/><text x="-18" y="232" class="text small">3V3</text>
+<rect class="mcu-pin" x="-35" y="285" width="128" height="38"/><text x="-18" y="312" class="text small">GPIO0</text>
+<rect class="mcu-pin" x="-35" y="355" width="128" height="38"/><text x="-18" y="382" class="text small">GPIO1</text>
+<rect class="mcu-pin" x="-35" y="425" width="128" height="38"/><text x="-18" y="452" class="text small">GPIO3</text>
+<rect class="mcu-pin" x="-35" y="495" width="128" height="38"/><text x="-18" y="522" class="text small">GPIO4</text>
+<rect class="mcu-pin" x="-35" y="565" width="128" height="38"/><text x="-18" y="592" class="text small">GPIO5</text>
+<text x="118" y="588" class="text tiny" fill="#64748b">VT is useful for debugging valid RF reception.</text>
+</g>
+
+<path class="wire line-gnd" d="M160 600 C640 600 920 323 1095 323"/>
+<path class="wire line-vcc" d="M248 600 C728 606 929 392 1095 392"/>
+<path class="wire line-d0" d="M336 600 C816 612 939 472 1095 472"/>
+<path class="wire line-d1" d="M424 600 C904 618 948 542 1095 542"/>
+<path class="wire line-d2" d="M512 600 C992 623 958 612 1095 612"/>
+<path class="wire line-d3" d="M600 600 C1080 629 967 682 1095 682"/>
+<path class="wire line-vt" d="M688 600 C1168 634 976 752 1095 752"/>
+<rect class="tag" x="855" y="286" width="130" height="34"/><text x="872" y="310" class="text tiny" style="font-weight:800;fill:#334155;">GND → GND</text>
+<rect class="tag" x="855" y="358" width="130" height="34"/><text x="872" y="382" class="text tiny" style="font-weight:800;fill:#b91c1c;">+V → 3V3</text>
+<rect class="tag" x="855" y="438" width="165" height="34"/><text x="872" y="462" class="text tiny" style="font-weight:800;fill:#b45309;">D0 → GPIO0</text>
+<rect class="tag" x="855" y="508" width="165" height="34"/><text x="872" y="532" class="text tiny" style="font-weight:800;fill:#047857;">D1 → GPIO1</text>
+<rect class="tag" x="855" y="578" width="165" height="34"/><text x="872" y="602" class="text tiny" style="font-weight:800;fill:#1d4ed8;">D2 → GPIO3</text>
+<rect class="tag" x="855" y="648" width="165" height="34"/><text x="872" y="672" class="text tiny" style="font-weight:800;fill:#6d28d9;">D3 → GPIO4</text>
+<rect class="tag" x="855" y="718" width="165" height="34"/><text x="872" y="742" class="text tiny" style="font-weight:800;fill:#be185d;">VT → GPIO5</text>
+
+<g transform="translate(80,700)">
+<rect class="box" x="0" y="0" width="730" height="210"/>
+<text x="28" y="45" class="text label">RX480-E-WQ pin order</text>
+<text x="30" y="88" class="text small">Left to right: GND → +V → D0 → D1 → D2 → D3 → VT</text>
+<text x="30" y="130" class="text small">D0–D3: decoded CMOS outputs for 4 remote buttons/channels.</text>
+<text x="30" y="168" class="text small">VT: HIGH while a valid learned/decoded RF frame is received.</text>
+</g>
+<g transform="translate(860,850)">
+<rect class="warning" x="0" y="0" width="735" height="175"/>
+<text x="28" y="46" class="text label">Power and GPIO notes</text>
+<text x="28" y="88" class="text small">Power the RX480 from 3.3V when wiring directly to ESP32 GPIO.</text>
+<text x="28" y="126" class="text small">If powered from 5V, verify output level first;</text>
+<text x="28" y="160" class="text small">use a divider or level shifter before 3.3V-only ESP32 inputs.</text>
+</g>
+<text x="80" y="1050" class="text tiny" fill="#64748b">Note: pinout/wiring diagram only; not an internal RF schematic of the RX480-E-WQ.</text>
+<text x="80" y="1080" class="text tiny" fill="#64748b">Editable SVG — open with Inkscape, Figma, Illustrator, a browser, or VS Code.</text>
+</svg>
