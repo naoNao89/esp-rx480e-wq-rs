@@ -4,6 +4,12 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 readme = "README.md"
+description = "no_std embedded-hal driver helpers for RX480-E-WQ/RX480E-4 RF receiver modules"
+repository = "https://github.com/naoNao89/esp-rx480e-wq-rs"
+homepage = "https://github.com/naoNao89/esp-rx480e-wq-rs"
+documentation = "https://docs.rs/rx480e-wq-driver"
+keywords = ["rx480", "rx480e", "embedded-hal", "rf", "esp32"]
+categories = ["embedded", "hardware-support", "no-std"]
 
 [dependencies]
 embedded-hal = "1"
