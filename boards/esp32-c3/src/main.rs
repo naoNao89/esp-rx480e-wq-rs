@@ -8,23 +8,17 @@ use esp_hal::{
     main,
 };
 use esp_println::println;
+use rx480e_wq_driver::{channel_state_from_bits, Channel, ChannelState};
 
 const SAMPLE_PERIOD_MS: u32 = 5;
 
-fn channel_bits(snapshot: &rx480e_wq_driver::Snapshot) -> u8 {
-    (snapshot.d0 as u8)
-        | ((snapshot.d1 as u8) << 1)
-        | ((snapshot.d2 as u8) << 2)
-        | ((snapshot.d3 as u8) << 3)
-}
-
-fn key_from_bits(bits: u8) -> Option<&'static str> {
-    match bits {
-        0b0001 => Some("D0"),
-        0b0010 => Some("D1"),
-        0b0100 => Some("D2"),
-        0b1000 => Some("D3"),
-        _ => None,
+fn key_name(channel: Channel) -> &'static str {
+    match channel {
+        Channel::D0 => "D0",
+        Channel::D1 => "D1",
+        Channel::D2 => "D2",
+        Channel::D3 => "D3",
+        Channel::VT => "VT",
     }
 }
 
@@ -56,9 +50,9 @@ fn main() -> ! {
 
     loop {
         if let Ok(Some(event)) = rx.poll_change() {
-            let bits = channel_bits(&event.current);
+            let bits = event.current.channel_bits();
 
-            if !event.previous.vt && event.current.vt {
+            if event.vt_rising() {
                 active_start_ms = ms;
                 seen_channel_bits = bits;
             }
@@ -67,16 +61,22 @@ fn main() -> ! {
                 seen_channel_bits |= bits;
             }
 
-            if event.previous.vt && !event.current.vt {
+            if event.vt_falling() {
                 let pulse_ms = ms.wrapping_sub(active_start_ms);
-                match key_from_bits(seen_channel_bits) {
-                    Some(key) => println!("EVENT: key={} vt=1 pulse_ms={}", key, pulse_ms),
-                    None if seen_channel_bits == 0 => {
+                match channel_state_from_bits(seen_channel_bits) {
+                    ChannelState::Single(channel) => {
+                        println!(
+                            "EVENT: key={} vt=1 pulse_ms={}",
+                            key_name(channel),
+                            pulse_ms
+                        )
+                    }
+                    ChannelState::None => {
                         println!("EVENT: vt_only pulse_ms={}", pulse_ms)
                     }
-                    None => println!(
+                    ChannelState::Multiple(mask) => println!(
                         "EVENT: multi_channel mask=0x{:x} vt=1 pulse_ms={}",
-                        seen_channel_bits, pulse_ms
+                        mask, pulse_ms
                     ),
                 }
                 seen_channel_bits = 0;

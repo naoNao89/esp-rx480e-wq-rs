@@ -2,6 +2,12 @@
 
 use embedded_hal::digital::InputPin;
 
+pub const D0_BIT: u8 = 0b0000_0001;
+pub const D1_BIT: u8 = 0b0000_0010;
+pub const D2_BIT: u8 = 0b0000_0100;
+pub const D3_BIT: u8 = 0b0000_1000;
+pub const VT_BIT: u8 = 0b0001_0000;
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Channel {
     D0,
@@ -9,6 +15,31 @@ pub enum Channel {
     D2,
     D3,
     VT,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ChannelState {
+    None,
+    Single(Channel),
+    Multiple(u8),
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum Edge {
+    Rising,
+    Falling,
+    Changed,
+}
+
+pub fn channel_state_from_bits(bits: u8) -> ChannelState {
+    match bits {
+        D0_BIT => ChannelState::Single(Channel::D0),
+        D1_BIT => ChannelState::Single(Channel::D1),
+        D2_BIT => ChannelState::Single(Channel::D2),
+        D3_BIT => ChannelState::Single(Channel::D3),
+        0 => ChannelState::None,
+        mask => ChannelState::Multiple(mask),
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Default)]
@@ -30,12 +61,62 @@ impl Snapshot {
             Channel::VT => self.vt,
         }
     }
+
+    pub fn channel_bits(&self) -> u8 {
+        (self.d0 as u8) | ((self.d1 as u8) << 1) | ((self.d2 as u8) << 2) | ((self.d3 as u8) << 3)
+    }
+
+    pub fn bits(&self) -> u8 {
+        self.channel_bits() | ((self.vt as u8) << 4)
+    }
+
+    pub fn vt_bit(&self) -> bool {
+        self.vt
+    }
+
+    pub fn active_channel(&self) -> Option<Channel> {
+        match channel_state_from_bits(self.channel_bits()) {
+            ChannelState::Single(channel) => Some(channel),
+            _ => None,
+        }
+    }
+
+    pub fn channel_state(&self) -> ChannelState {
+        channel_state_from_bits(self.channel_bits())
+    }
+
+    pub fn vt_only(&self) -> bool {
+        self.vt && self.channel_bits() == 0
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Event {
     pub previous: Snapshot,
     pub current: Snapshot,
+}
+
+impl Event {
+    pub fn changed_mask(&self) -> u8 {
+        self.previous.bits() ^ self.current.bits()
+    }
+
+    pub fn edge(&self, channel: Channel) -> Option<Edge> {
+        match (self.previous.get(channel), self.current.get(channel)) {
+            (false, true) => Some(Edge::Rising),
+            (true, false) => Some(Edge::Falling),
+            (previous, current) if previous != current => Some(Edge::Changed),
+            _ => None,
+        }
+    }
+
+    pub fn vt_rising(&self) -> bool {
+        self.edge(Channel::VT) == Some(Edge::Rising)
+    }
+
+    pub fn vt_falling(&self) -> bool {
+        self.edge(Channel::VT) == Some(Edge::Falling)
+    }
 }
 
 pub struct Rx480eWq<D0, D1, D2, D3, VT> {
@@ -121,6 +202,31 @@ mod tests {
         }
     }
 
+    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+    struct PinError;
+
+    impl embedded_hal::digital::Error for PinError {
+        fn kind(&self) -> embedded_hal::digital::ErrorKind {
+            embedded_hal::digital::ErrorKind::Other
+        }
+    }
+
+    struct ErrorPin;
+
+    impl embedded_hal::digital::ErrorType for ErrorPin {
+        type Error = PinError;
+    }
+
+    impl InputPin for ErrorPin {
+        fn is_high(&mut self) -> Result<bool, Self::Error> {
+            Err(PinError)
+        }
+
+        fn is_low(&mut self) -> Result<bool, Self::Error> {
+            Err(PinError)
+        }
+    }
+
     #[test]
     fn sample_reads_all_channels() {
         let mut dev = Rx480eWq::new(
@@ -157,5 +263,102 @@ mod tests {
         let evt = dev.poll_change().unwrap().expect("event");
         assert_eq!(evt.previous.d0, false);
         assert_eq!(evt.current.d0, true);
+    }
+
+    #[test]
+    fn snapshot_helpers_classify_channels() {
+        let single = Snapshot {
+            d0: false,
+            d1: true,
+            d2: false,
+            d3: false,
+            vt: true,
+        };
+        assert_eq!(single.channel_bits(), D1_BIT);
+        assert_eq!(single.bits(), D1_BIT | VT_BIT);
+        assert!(single.vt_bit());
+        assert_eq!(single.active_channel(), Some(Channel::D1));
+        assert_eq!(single.channel_state(), ChannelState::Single(Channel::D1));
+        assert!(!single.vt_only());
+
+        let vt_only = Snapshot {
+            vt: true,
+            ..Snapshot::default()
+        };
+        assert_eq!(vt_only.channel_state(), ChannelState::None);
+        assert!(vt_only.vt_only());
+
+        let multi = Snapshot {
+            d0: true,
+            d1: false,
+            d2: true,
+            d3: false,
+            vt: true,
+        };
+        assert_eq!(multi.channel_bits(), D0_BIT | D2_BIT);
+        assert_eq!(multi.active_channel(), None);
+        assert_eq!(
+            multi.channel_state(),
+            ChannelState::Multiple(D0_BIT | D2_BIT)
+        );
+    }
+
+    #[test]
+    fn event_helpers_report_changed_mask_and_edges() {
+        let event = Event {
+            previous: Snapshot::default(),
+            current: Snapshot {
+                d0: true,
+                vt: true,
+                ..Snapshot::default()
+            },
+        };
+
+        assert_eq!(event.changed_mask(), D0_BIT | VT_BIT);
+        assert_eq!(event.edge(Channel::D0), Some(Edge::Rising));
+        assert_eq!(event.edge(Channel::VT), Some(Edge::Rising));
+        assert!(event.vt_rising());
+        assert!(!event.vt_falling());
+
+        let falling = Event {
+            previous: event.current,
+            current: Snapshot::default(),
+        };
+        assert_eq!(falling.edge(Channel::D0), Some(Edge::Falling));
+        assert_eq!(falling.edge(Channel::VT), Some(Edge::Falling));
+        assert!(falling.vt_falling());
+    }
+
+    #[test]
+    fn poll_change_suppresses_repeated_same_state() {
+        let mut dev = Rx480eWq::new(
+            MockPin::new(false),
+            MockPin::new(false),
+            MockPin::new(false),
+            MockPin::new(false),
+            MockPin::new(false),
+        );
+
+        assert!(dev.poll_change().unwrap().is_none());
+        assert!(dev.poll_change().unwrap().is_none());
+    }
+
+    #[test]
+    fn channel_state_from_bits_detects_vt_only_and_multi_channel() {
+        assert_eq!(channel_state_from_bits(0), ChannelState::None);
+        assert_eq!(
+            channel_state_from_bits(D3_BIT),
+            ChannelState::Single(Channel::D3)
+        );
+        assert_eq!(
+            channel_state_from_bits(D0_BIT | D1_BIT),
+            ChannelState::Multiple(D0_BIT | D1_BIT)
+        );
+    }
+
+    #[test]
+    fn sample_propagates_pin_errors() {
+        let mut dev = Rx480eWq::new(ErrorPin, ErrorPin, ErrorPin, ErrorPin, ErrorPin);
+        assert_eq!(dev.sample(), Err(PinError));
     }
 }
