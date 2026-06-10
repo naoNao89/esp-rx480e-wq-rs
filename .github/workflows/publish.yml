@@ -1,0 +1,34 @@
+name: Publish
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish-driver:
+    name: Publish rx480e-wq-driver
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Check whether version is already published
+        id: crate
+        run: |
+          version=$(cargo metadata --no-deps --format-version 1 | python3 -c "import json,sys; data=json.load(sys.stdin); print(next(p['version'] for p in data['packages'] if p['name'] == 'rx480e-wq-driver'))")
+          status=$(curl -s -o /dev/null -w "%{http_code}" "https://crates.io/api/v1/crates/rx480e-wq-driver/$version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [ "$status" = "200" ]; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Verify package
+        if: steps.crate.outputs.published == 'false'
+        run: cargo publish -p rx480e-wq-driver --dry-run
+      - name: Publish package
+        if: steps.crate.outputs.published == 'false'
+        run: cargo publish -p rx480e-wq-driver
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
