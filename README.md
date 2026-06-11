@@ -145,7 +145,7 @@ The explicit host target is useful because `.cargo/config.toml` defaults to the 
 
 ## Current firmware
 
-The firmware is a minimal RX480 reader. It reads:
+The firmware is a minimal RX480 debug reader. It reads:
 
 ```text
 D0=GPIO0 D1=GPIO1 D2=GPIO3 D3=GPIO4 VT=GPIO5
@@ -159,6 +159,54 @@ EVENT: key=D1 vt=1 pulse_ms=118
 EVENT: key=D2 vt=1 pulse_ms=121
 EVENT: key=D3 vt=1 pulse_ms=119
 EVENT: vt_only pulse_ms=80
+```
+
+These `EVENT: ...` lines are produced by the ESP32-C3 example firmware. They are application-level debug logs for checking wiring, serial output, and pulse timing. They are **not** the API contract of the `rx480e-wq-driver` crate.
+
+Layer split:
+
+```text
+Driver crate:    Snapshot / Event / ChannelState
+Debug firmware:  serial logs, pulse_ms measurement, hardware smoke test
+```
+
+The driver crate does not print serial logs, flash firmware, learn/clear RX480 codes, or measure pulse duration by itself. A crate user should handle structured state from `poll_change()` and decide what their application does with it.
+
+Example driver usage:
+
+```rust
+let mut rx = Rx480eWq::new(d0, d1, d2, d3, vt);
+
+if let Some(event) = rx.poll_change()? {
+    if event.vt_rising() {
+        // Valid transmission started.
+    }
+
+    match event.current.channel_state() {
+        ChannelState::Single(Channel::D0) => {
+            // D0 active.
+        }
+        ChannelState::Single(Channel::D1) => {
+            // D1 active.
+        }
+        ChannelState::Single(Channel::D2) => {
+            // D2 active.
+        }
+        ChannelState::Single(Channel::D3) => {
+            // D3 active.
+        }
+        ChannelState::None if event.current.vt_only() => {
+            // VT active, but no D0-D3 channel output is active.
+        }
+        ChannelState::None => {
+            // No channel active.
+        }
+        ChannelState::Multiple(mask) => {
+            // Multiple D pins active.
+        }
+        _ => {}
+    }
+}
 ```
 
 Mask values:

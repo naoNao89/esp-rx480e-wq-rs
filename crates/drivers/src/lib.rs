@@ -17,6 +17,11 @@ pub enum Channel {
     VT,
 }
 
+/// Decoded `D0`-`D3` channel state.
+///
+/// `VT` is not returned as a `ChannelState`; use `Snapshot::vt`,
+/// `Snapshot::vt_only()`, `Event::vt_rising()`, or `Event::vt_falling()`
+/// for valid-transmission state.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ChannelState {
     None,
@@ -85,6 +90,7 @@ impl Snapshot {
         channel_state_from_bits(self.channel_bits())
     }
 
+    /// Returns true when `VT` is active but no `D0`-`D3` channel output is active.
     pub fn vt_only(&self) -> bool {
         self.vt && self.channel_bits() == 0
     }
