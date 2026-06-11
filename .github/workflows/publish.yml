@@ -16,7 +16,7 @@ jobs:
       - name: Prepare standalone crate
         run: |
           mkdir -p /tmp/rx480e-wq-driver
-          cp -R crates/drivers/Cargo.toml crates/drivers/README.md crates/drivers/src crates/drivers/tests /tmp/rx480e-wq-driver/
+          cp -R crates/drivers/Cargo.toml crates/drivers/README.md crates/drivers/src crates/drivers/tests crates/drivers/examples /tmp/rx480e-wq-driver/
           python3 - <<'PY'
           from pathlib import Path
           path = Path('/tmp/rx480e-wq-driver/Cargo.toml')

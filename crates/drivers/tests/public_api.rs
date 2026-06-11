@@ -51,6 +51,21 @@ fn snapshot_api_returns_structured_state_not_debug_text() {
 }
 
 #[test]
+fn channel_helpers_expose_names_and_bits() {
+    assert_eq!(Channel::D0.name(), "D0");
+    assert_eq!(Channel::D1.name(), "D1");
+    assert_eq!(Channel::D2.name(), "D2");
+    assert_eq!(Channel::D3.name(), "D3");
+    assert_eq!(Channel::VT.name(), "VT");
+
+    assert_eq!(Channel::D0.bit(), D0_BIT);
+    assert_eq!(Channel::D1.bit(), D1_BIT);
+    assert_eq!(Channel::D2.bit(), D2_BIT);
+    assert_eq!(Channel::D3.bit(), D3_BIT);
+    assert_eq!(Channel::VT.bit(), VT_BIT);
+}
+
+#[test]
 fn vt_only_means_vt_active_without_d0_to_d3() {
     let snapshot = Snapshot {
         d0: false,

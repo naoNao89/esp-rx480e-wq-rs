@@ -8,19 +8,9 @@ use esp_hal::{
     main,
 };
 use esp_println::println;
-use rx480e_wq_driver::{channel_state_from_bits, Channel, ChannelState};
+use rx480e_wq_driver::{channel_state_from_bits, ChannelState};
 
 const SAMPLE_PERIOD_MS: u32 = 5;
-
-fn key_name(channel: Channel) -> &'static str {
-    match channel {
-        Channel::D0 => "D0",
-        Channel::D1 => "D1",
-        Channel::D2 => "D2",
-        Channel::D3 => "D3",
-        Channel::VT => "VT",
-    }
-}
 
 #[main]
 fn main() -> ! {
@@ -65,11 +55,7 @@ fn main() -> ! {
                 let pulse_ms = ms.wrapping_sub(active_start_ms);
                 match channel_state_from_bits(seen_channel_bits) {
                     ChannelState::Single(channel) => {
-                        println!(
-                            "EVENT: key={} vt=1 pulse_ms={}",
-                            key_name(channel),
-                            pulse_ms
-                        )
+                        println!("EVENT: key={} vt=1 pulse_ms={}", channel.name(), pulse_ms)
                     }
                     ChannelState::None => {
                         println!("EVENT: vt_only pulse_ms={}", pulse_ms)

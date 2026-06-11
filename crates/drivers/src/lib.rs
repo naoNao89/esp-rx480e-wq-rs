@@ -17,6 +17,28 @@ pub enum Channel {
     VT,
 }
 
+impl Channel {
+    pub fn name(self) -> &'static str {
+        match self {
+            Channel::D0 => "D0",
+            Channel::D1 => "D1",
+            Channel::D2 => "D2",
+            Channel::D3 => "D3",
+            Channel::VT => "VT",
+        }
+    }
+
+    pub fn bit(self) -> u8 {
+        match self {
+            Channel::D0 => D0_BIT,
+            Channel::D1 => D1_BIT,
+            Channel::D2 => D2_BIT,
+            Channel::D3 => D3_BIT,
+            Channel::VT => VT_BIT,
+        }
+    }
+}
+
 /// Decoded `D0`-`D3` channel state.
 ///
 /// `VT` is not returned as a `ChannelState`; use `Snapshot::vt`,
@@ -253,6 +275,21 @@ mod tests {
                 vt: true
             }
         );
+    }
+
+    #[test]
+    fn channel_helpers_return_stable_names_and_bits() {
+        assert_eq!(Channel::D0.name(), "D0");
+        assert_eq!(Channel::D1.name(), "D1");
+        assert_eq!(Channel::D2.name(), "D2");
+        assert_eq!(Channel::D3.name(), "D3");
+        assert_eq!(Channel::VT.name(), "VT");
+
+        assert_eq!(Channel::D0.bit(), D0_BIT);
+        assert_eq!(Channel::D1.bit(), D1_BIT);
+        assert_eq!(Channel::D2.bit(), D2_BIT);
+        assert_eq!(Channel::D3.bit(), D3_BIT);
+        assert_eq!(Channel::VT.bit(), VT_BIT);
     }
 
     #[test]
