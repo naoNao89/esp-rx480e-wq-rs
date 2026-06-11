@@ -3,7 +3,7 @@
 #
 # Examples:
 #   ./run.sh
-#   PORT=/dev/cu.usbmodem11101 ./run.sh
+#   PORT=/dev/cu.usbmodem11301 ./run.sh
 #   NO_FLASH=1 ./run.sh
 #   NO_MONITOR=1 ./run.sh
 #   NO_LOG=1 ./run.sh
@@ -16,12 +16,16 @@ if [ -f "$HOME/export-esp.sh" ]; then
   . "$HOME/export-esp.sh"
 fi
 
-PORT="${PORT:-/dev/cu.usbmodem11101}"
+PORT="${PORT:-}"
 BAUD="${BAUD:-115200}"
 TARGET="${TARGET:-riscv32imc-unknown-none-elf}"
 LOG_DIR="${LOG_DIR:-logs}"
 LOG_FILE="${LOG_FILE:-}"
 BIN="target/${TARGET}/release/esp32-c3-rx480e-wq"
+
+if [ -z "$PORT" ]; then
+  PORT="$(./scripts/esp-port.sh --print)"
+fi
 
 if [ "${NO_LOG:-0}" != "1" ] && [ -z "$LOG_FILE" ]; then
   LOG_FILE="$LOG_DIR/rx480e-$(date +%Y%m%d-%H%M%S).log"

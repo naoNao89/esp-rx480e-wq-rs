@@ -1,4 +1,4 @@
-PORT ?= /dev/cu.usbmodem11101
+PORT ?=
 BAUD ?= 115200
 TARGET ?= riscv32imc-unknown-none-elf
 HOST_TARGET ?= $(shell rustc -vV | awk '/^host:/ { print $$2 }')
@@ -18,7 +18,7 @@ build:
 	env -u RUSTFLAGS cargo build -p esp32-c3-rx480e-wq --release --target $(TARGET)
 
 flash: build
-	env -u RUSTFLAGS espflash flash --port "$(PORT)" "$(BIN)"
+	PORT="$(PORT)" ./scripts/esp-port.sh env -u RUSTFLAGS espflash flash --port "$$ESP_PORT" "$(BIN)"
 
 monitor:
 	PORT="$(PORT)" BAUD="$(BAUD)" TARGET="$(TARGET)" LOG_DIR="$(LOG_DIR)" LOG_FILE="$(LOG_FILE)" NO_FLASH=1 NO_MONITOR="$(NO_MONITOR)" NO_LOG="$(NO_LOG)" ./run.sh
