@@ -23,6 +23,27 @@ jobs:
           targets: x86_64-unknown-linux-gnu
       - run: cargo test -p rx480e-wq-driver --target x86_64-unknown-linux-gnu
 
+  driver-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+          targets: x86_64-unknown-linux-gnu
+      - run: cargo clippy -p rx480e-wq-driver --all-targets --target x86_64-unknown-linux-gnu -- -D warnings
+
+  driver-doc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu
+      - run: cargo doc -p rx480e-wq-driver --no-deps --target x86_64-unknown-linux-gnu
+        env:
+          RUSTDOCFLAGS: -D warnings
+
   esp32c3-check:
     runs-on: ubuntu-latest
     steps:
@@ -30,7 +51,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: riscv32imc-unknown-none-elf
-      - run: cargo check -p esp32-c3-rx480e-wq --target riscv32imc-unknown-none-elf
+      - run: cargo check -p esp32-c3-rx480e-wq --release --target riscv32imc-unknown-none-elf
 
   xml-svg-lint:
     runs-on: ubuntu-latest

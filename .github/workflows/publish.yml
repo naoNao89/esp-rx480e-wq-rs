@@ -20,26 +20,20 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
 
-          workspace = Path('Cargo.toml').read_text()
-          version = next(
-              line.split('=', 1)[1].strip().strip('"')
-              for line in workspace.splitlines()
-              if line.strip().startswith('version = ')
-          )
+          workspace_text = Path('Cargo.toml').read_text()
           edition = next(
               line.split('=', 1)[1].strip().strip('"')
-              for line in workspace.splitlines()
+              for line in workspace_text.splitlines()
               if line.strip().startswith('edition = ')
           )
           license = next(
               line.split('=', 1)[1].strip().strip('"')
-              for line in workspace.splitlines()
+              for line in workspace_text.splitlines()
               if line.strip().startswith('license = ')
           )
 
           path = Path('/tmp/rx480e-wq-driver/Cargo.toml')
           text = path.read_text()
-          text = text.replace('version.workspace = true', f'version = "{version}"')
           text = text.replace('edition.workspace = true', f'edition = "{edition}"')
           text = text.replace('license.workspace = true', f'license = "{license}"')
           path.write_text(text)
