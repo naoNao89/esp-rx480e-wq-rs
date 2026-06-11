@@ -13,3 +13,6 @@ categories = ["embedded", "hardware-support", "no-std"]
 
 [dependencies]
 embedded-hal = "1"
+
+[package.metadata.docs.rs]
+targets = []
