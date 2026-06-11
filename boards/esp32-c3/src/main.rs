@@ -8,7 +8,7 @@ use esp_hal::{
     main,
 };
 use esp_println::println;
-use rx480e_wq_driver::{ChannelState, channel_state_from_bits};
+use rx480e_wq_driver::{ChannelState, channel_state_from_channel_bits};
 
 const SAMPLE_PERIOD_MS: u32 = 5;
 
@@ -53,7 +53,7 @@ fn main() -> ! {
 
             if event.vt_falling() {
                 let pulse_ms = ms.wrapping_sub(active_start_ms);
-                match channel_state_from_bits(seen_channel_bits) {
+                match channel_state_from_channel_bits(seen_channel_bits) {
                     ChannelState::Single(channel) => {
                         println!("EVENT: key={} vt=1 pulse_ms={}", channel.name(), pulse_ms)
                     }
