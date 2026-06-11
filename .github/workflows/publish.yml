@@ -26,12 +26,22 @@ jobs:
               for line in workspace.splitlines()
               if line.strip().startswith('version = ')
           )
+          edition = next(
+              line.split('=', 1)[1].strip().strip('"')
+              for line in workspace.splitlines()
+              if line.strip().startswith('edition = ')
+          )
+          license = next(
+              line.split('=', 1)[1].strip().strip('"')
+              for line in workspace.splitlines()
+              if line.strip().startswith('license = ')
+          )
 
           path = Path('/tmp/rx480e-wq-driver/Cargo.toml')
           text = path.read_text()
           text = text.replace('version.workspace = true', f'version = "{version}"')
-          text = text.replace('edition.workspace = true', 'edition = "2021"')
-          text = text.replace('license.workspace = true', 'license = "MIT"')
+          text = text.replace('edition.workspace = true', f'edition = "{edition}"')
+          text = text.replace('license.workspace = true', f'license = "{license}"')
           path.write_text(text)
           PY
       - name: Check whether version is already published
