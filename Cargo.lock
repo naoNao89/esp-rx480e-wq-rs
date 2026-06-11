@@ -554,7 +554,7 @@ dependencies = [
 
 [[package]]
 name = "esp32-c3-rx480e-wq"
-version = "0.1.4"
+version = "0.2.0"
 dependencies = [
  "esp-backtrace",
  "esp-hal",
