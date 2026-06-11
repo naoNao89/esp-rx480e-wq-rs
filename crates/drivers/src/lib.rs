@@ -1,20 +1,84 @@
+//! `no_std` [`embedded-hal`](embedded_hal) input helper for RX480-E-WQ / RX480E-4
+//! decoded output pins.
+//!
+//! This crate reads the module's active-high `D0`-`D3` decoded channel outputs
+//! and `VT` valid-transmission output through [`embedded_hal::digital::InputPin`].
+//!
+//! Pin conventions:
+//! - `D0`-`D3` are active-high decoded channel outputs.
+//! - `VT` is active-high and indicates a valid transmission.
+//! - Bits are laid out as `D0=0b0000_0001`, `D1=0b0000_0010`, `D2=0b0000_0100`,
+//!   `D3=0b0000_1000`, `VT=0b0001_0000`.
+//! - Sampling is sequential (`D0`, `D1`, `D2`, `D3`, `VT`), not atomic.
+//! - `poll_change` compares against an initial all-low baseline, so a pin that
+//!   is already high on the first call is reported as a rising edge.
+//!
+//! It reports structured [`Snapshot`] and [`Event`] values that application
+//! firmware can turn into logs, relay actions, MQTT messages, or other behavior.
+//!
+//! It does **not** decode raw RF, pair remotes, clear learned codes, inspect the
+//! RX480 module's internal learned-code memory, transmit RF, or measure pulse
+//! durations.
+//!
+//! ```no_run
+//! use rx480e_wq_driver::{ChannelState, Rx480eWq};
+//!
+//! # fn run<D0, D1, D2, D3, VT>(d0: D0, d1: D1, d2: D2, d3: D3, vt: VT) -> Result<(), D0::Error>
+//! # where
+//! #     D0: embedded_hal::digital::InputPin,
+//! #     D1: embedded_hal::digital::InputPin<Error = D0::Error>,
+//! #     D2: embedded_hal::digital::InputPin<Error = D0::Error>,
+//! #     D3: embedded_hal::digital::InputPin<Error = D0::Error>,
+//! #     VT: embedded_hal::digital::InputPin<Error = D0::Error>,
+//! # {
+//! let mut rx = Rx480eWq::new(d0, d1, d2, d3, vt);
+//!
+//! if let Some(event) = rx.poll_change()? {
+//!     if event.vt_rising() {
+//!         // A valid RF frame was accepted by the RX480 module.
+//!     }
+//!
+//!     match event.current.channel_state() {
+//!         ChannelState::Single(channel) => {
+//!             // One of D0-D3 is active. `VT` is handled separately.
+//!             let _name = channel.name();
+//!         }
+//!         ChannelState::None if event.current.vt_only() => {
+//!             // VT is active, but no D0-D3 output is active.
+//!         }
+//!         ChannelState::None => {}
+//!         ChannelState::Multiple(mask) => {
+//!             // Multiple D0-D3 outputs are active.
+//!             let _mask = mask;
+//!         }
+//!     }
+//! }
+//! # Ok(())
+//! # }
+//! ```
+
 #![no_std]
 
 use embedded_hal::digital::InputPin;
 
+/// Bit for the active-high `D0` channel output.
 pub const D0_BIT: u8 = 0b0000_0001;
+/// Bit for the active-high `D1` channel output.
 pub const D1_BIT: u8 = 0b0000_0010;
+/// Bit for the active-high `D2` channel output.
 pub const D2_BIT: u8 = 0b0000_0100;
+/// Bit for the active-high `D3` channel output.
 pub const D3_BIT: u8 = 0b0000_1000;
+/// Bit for the active-high `VT` valid-transmission output.
 pub const VT_BIT: u8 = 0b0001_0000;
 
+/// One decoded channel output (`D0`-`D3`).
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Channel {
     D0,
     D1,
     D2,
     D3,
-    VT,
 }
 
 impl Channel {
@@ -24,7 +88,6 @@ impl Channel {
             Channel::D1 => "D1",
             Channel::D2 => "D2",
             Channel::D3 => "D3",
-            Channel::VT => "VT",
         }
     }
 
@@ -34,16 +97,46 @@ impl Channel {
             Channel::D1 => D1_BIT,
             Channel::D2 => D2_BIT,
             Channel::D3 => D3_BIT,
-            Channel::VT => VT_BIT,
+        }
+    }
+}
+
+/// One sampled signal (`D0`-`D3` or `VT`).
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum Signal {
+    D0,
+    D1,
+    D2,
+    D3,
+    VT,
+}
+
+impl Signal {
+    pub fn name(self) -> &'static str {
+        match self {
+            Signal::D0 => "D0",
+            Signal::D1 => "D1",
+            Signal::D2 => "D2",
+            Signal::D3 => "D3",
+            Signal::VT => "VT",
+        }
+    }
+
+    pub fn bit(self) -> u8 {
+        match self {
+            Signal::D0 => D0_BIT,
+            Signal::D1 => D1_BIT,
+            Signal::D2 => D2_BIT,
+            Signal::D3 => D3_BIT,
+            Signal::VT => VT_BIT,
         }
     }
 }
 
 /// Decoded `D0`-`D3` channel state.
 ///
-/// `VT` is not returned as a `ChannelState`; use `Snapshot::vt`,
-/// `Snapshot::vt_only()`, `Event::vt_rising()`, or `Event::vt_falling()`
-/// for valid-transmission state.
+/// `VT` is not returned as a `ChannelState`; use [`Snapshot::vt_only`],
+/// [`Event::vt_rising`], or [`Event::vt_falling`] for valid-transmission state.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ChannelState {
     None,
@@ -51,15 +144,16 @@ pub enum ChannelState {
     Multiple(u8),
 }
 
+/// Rising/falling transition on a sampled signal.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Edge {
     Rising,
     Falling,
-    Changed,
 }
 
-pub fn channel_state_from_bits(bits: u8) -> ChannelState {
-    match bits {
+/// Classify only the `D0`-`D3` channel bits.
+pub fn channel_state_from_channel_bits(bits: u8) -> ChannelState {
+    match bits & (D0_BIT | D1_BIT | D2_BIT | D3_BIT) {
         D0_BIT => ChannelState::Single(Channel::D0),
         D1_BIT => ChannelState::Single(Channel::D1),
         D2_BIT => ChannelState::Single(Channel::D2),
@@ -67,6 +161,11 @@ pub fn channel_state_from_bits(bits: u8) -> ChannelState {
         0 => ChannelState::None,
         mask => ChannelState::Multiple(mask),
     }
+}
+
+#[deprecated(note = "use channel_state_from_channel_bits")]
+pub fn channel_state_from_bits(bits: u8) -> ChannelState {
+    channel_state_from_channel_bits(bits)
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Default)]
@@ -85,31 +184,48 @@ impl Snapshot {
             Channel::D1 => self.d1,
             Channel::D2 => self.d2,
             Channel::D3 => self.d3,
-            Channel::VT => self.vt,
         }
     }
 
+    pub fn get_signal(&self, signal: Signal) -> bool {
+        match signal {
+            Signal::D0 => self.d0,
+            Signal::D1 => self.d1,
+            Signal::D2 => self.d2,
+            Signal::D3 => self.d3,
+            Signal::VT => self.vt,
+        }
+    }
+
+    /// Packed `D0`-`D3` bits in the low nibble.
     pub fn channel_bits(&self) -> u8 {
         (self.d0 as u8) | ((self.d1 as u8) << 1) | ((self.d2 as u8) << 2) | ((self.d3 as u8) << 3)
     }
 
+    /// Returns true when at least one `D0`-`D3` channel output is active.
+    pub fn any_channel_active(&self) -> bool {
+        self.channel_bits() != 0
+    }
+
+    /// Packed snapshot bits: channels in the low nibble, `VT` in bit 4.
     pub fn bits(&self) -> u8 {
         self.channel_bits() | ((self.vt as u8) << 4)
     }
 
-    pub fn vt_bit(&self) -> bool {
+    /// Returns true when the `VT` valid-transmission output is active.
+    pub fn is_valid_transmission(&self) -> bool {
         self.vt
     }
 
     pub fn active_channel(&self) -> Option<Channel> {
-        match channel_state_from_bits(self.channel_bits()) {
+        match channel_state_from_channel_bits(self.channel_bits()) {
             ChannelState::Single(channel) => Some(channel),
             _ => None,
         }
     }
 
     pub fn channel_state(&self) -> ChannelState {
-        channel_state_from_bits(self.channel_bits())
+        channel_state_from_channel_bits(self.channel_bits())
     }
 
     /// Returns true when `VT` is active but no `D0`-`D3` channel output is active.
@@ -129,21 +245,23 @@ impl Event {
         self.previous.bits() ^ self.current.bits()
     }
 
-    pub fn edge(&self, channel: Channel) -> Option<Edge> {
-        match (self.previous.get(channel), self.current.get(channel)) {
+    pub fn edge(&self, signal: Signal) -> Option<Edge> {
+        match (
+            self.previous.get_signal(signal),
+            self.current.get_signal(signal),
+        ) {
             (false, true) => Some(Edge::Rising),
             (true, false) => Some(Edge::Falling),
-            (previous, current) if previous != current => Some(Edge::Changed),
             _ => None,
         }
     }
 
     pub fn vt_rising(&self) -> bool {
-        self.edge(Channel::VT) == Some(Edge::Rising)
+        self.edge(Signal::VT) == Some(Edge::Rising)
     }
 
     pub fn vt_falling(&self) -> bool {
-        self.edge(Channel::VT) == Some(Edge::Falling)
+        self.edge(Signal::VT) == Some(Edge::Falling)
     }
 }
 
@@ -185,6 +303,8 @@ where
         })
     }
 
+    /// Sample all pins and return an event when the snapshot differs from the
+    /// previous sample.
     pub fn poll_change(&mut self) -> Result<Option<Event>, D0::Error> {
         let current = self.sample()?;
         if current == self.last {
@@ -283,13 +403,26 @@ mod tests {
         assert_eq!(Channel::D1.name(), "D1");
         assert_eq!(Channel::D2.name(), "D2");
         assert_eq!(Channel::D3.name(), "D3");
-        assert_eq!(Channel::VT.name(), "VT");
 
         assert_eq!(Channel::D0.bit(), D0_BIT);
         assert_eq!(Channel::D1.bit(), D1_BIT);
         assert_eq!(Channel::D2.bit(), D2_BIT);
         assert_eq!(Channel::D3.bit(), D3_BIT);
-        assert_eq!(Channel::VT.bit(), VT_BIT);
+    }
+
+    #[test]
+    fn signal_helpers_return_stable_names_and_bits() {
+        assert_eq!(Signal::D0.name(), "D0");
+        assert_eq!(Signal::D1.name(), "D1");
+        assert_eq!(Signal::D2.name(), "D2");
+        assert_eq!(Signal::D3.name(), "D3");
+        assert_eq!(Signal::VT.name(), "VT");
+
+        assert_eq!(Signal::D0.bit(), D0_BIT);
+        assert_eq!(Signal::D1.bit(), D1_BIT);
+        assert_eq!(Signal::D2.bit(), D2_BIT);
+        assert_eq!(Signal::D3.bit(), D3_BIT);
+        assert_eq!(Signal::VT.bit(), VT_BIT);
     }
 
     #[test]
@@ -304,8 +437,8 @@ mod tests {
         assert!(dev.poll_change().unwrap().is_none());
         dev.d0.state.set(true);
         let evt = dev.poll_change().unwrap().expect("event");
-        assert_eq!(evt.previous.d0, false);
-        assert_eq!(evt.current.d0, true);
+        assert!(!evt.previous.d0);
+        assert!(evt.current.d0);
     }
 
     #[test]
@@ -318,8 +451,9 @@ mod tests {
             vt: true,
         };
         assert_eq!(single.channel_bits(), D1_BIT);
+        assert!(single.any_channel_active());
         assert_eq!(single.bits(), D1_BIT | VT_BIT);
-        assert!(single.vt_bit());
+        assert!(single.is_valid_transmission());
         assert_eq!(single.active_channel(), Some(Channel::D1));
         assert_eq!(single.channel_state(), ChannelState::Single(Channel::D1));
         assert!(!single.vt_only());
@@ -329,6 +463,7 @@ mod tests {
             ..Snapshot::default()
         };
         assert_eq!(vt_only.channel_state(), ChannelState::None);
+        assert!(!vt_only.any_channel_active());
         assert!(vt_only.vt_only());
 
         let multi = Snapshot {
@@ -358,8 +493,8 @@ mod tests {
         };
 
         assert_eq!(event.changed_mask(), D0_BIT | VT_BIT);
-        assert_eq!(event.edge(Channel::D0), Some(Edge::Rising));
-        assert_eq!(event.edge(Channel::VT), Some(Edge::Rising));
+        assert_eq!(event.edge(Signal::D0), Some(Edge::Rising));
+        assert_eq!(event.edge(Signal::VT), Some(Edge::Rising));
         assert!(event.vt_rising());
         assert!(!event.vt_falling());
 
@@ -367,8 +502,8 @@ mod tests {
             previous: event.current,
             current: Snapshot::default(),
         };
-        assert_eq!(falling.edge(Channel::D0), Some(Edge::Falling));
-        assert_eq!(falling.edge(Channel::VT), Some(Edge::Falling));
+        assert_eq!(falling.edge(Signal::D0), Some(Edge::Falling));
+        assert_eq!(falling.edge(Signal::VT), Some(Edge::Falling));
         assert!(falling.vt_falling());
     }
 
@@ -387,16 +522,17 @@ mod tests {
     }
 
     #[test]
-    fn channel_state_from_bits_detects_vt_only_and_multi_channel() {
-        assert_eq!(channel_state_from_bits(0), ChannelState::None);
+    fn channel_state_from_channel_bits_detects_multi_channel() {
+        assert_eq!(channel_state_from_channel_bits(0), ChannelState::None);
         assert_eq!(
-            channel_state_from_bits(D3_BIT),
+            channel_state_from_channel_bits(D3_BIT),
             ChannelState::Single(Channel::D3)
         );
         assert_eq!(
-            channel_state_from_bits(D0_BIT | D1_BIT),
+            channel_state_from_channel_bits(D0_BIT | D1_BIT),
             ChannelState::Multiple(D0_BIT | D1_BIT)
         );
+        assert_eq!(channel_state_from_channel_bits(VT_BIT), ChannelState::None);
     }
 
     #[test]

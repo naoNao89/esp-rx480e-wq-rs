@@ -2,8 +2,8 @@ use std::{cell::Cell, rc::Rc};
 
 use embedded_hal::digital::InputPin;
 use rx480e_wq_driver::{
-    Channel, ChannelState, D0_BIT, D1_BIT, D2_BIT, D3_BIT, Edge, Event, Rx480eWq, Snapshot, VT_BIT,
-    channel_state_from_bits,
+    Channel, ChannelState, D0_BIT, D1_BIT, D2_BIT, D3_BIT, Edge, Event, Rx480eWq, Signal, Snapshot,
+    VT_BIT, channel_state_from_channel_bits,
 };
 
 #[derive(Clone)]
@@ -44,10 +44,13 @@ fn snapshot_api_returns_structured_state_not_debug_text() {
     };
 
     assert_eq!(snapshot.channel_bits(), D0_BIT);
+    assert!(snapshot.any_channel_active());
     assert_eq!(snapshot.bits(), D0_BIT | VT_BIT);
+    assert!(snapshot.is_valid_transmission());
     assert_eq!(snapshot.active_channel(), Some(Channel::D0));
     assert_eq!(snapshot.channel_state(), ChannelState::Single(Channel::D0));
     assert!(!snapshot.vt_only());
+    assert!(snapshot.get_signal(Signal::VT));
 }
 
 #[test]
@@ -56,13 +59,26 @@ fn channel_helpers_expose_names_and_bits() {
     assert_eq!(Channel::D1.name(), "D1");
     assert_eq!(Channel::D2.name(), "D2");
     assert_eq!(Channel::D3.name(), "D3");
-    assert_eq!(Channel::VT.name(), "VT");
 
     assert_eq!(Channel::D0.bit(), D0_BIT);
     assert_eq!(Channel::D1.bit(), D1_BIT);
     assert_eq!(Channel::D2.bit(), D2_BIT);
     assert_eq!(Channel::D3.bit(), D3_BIT);
-    assert_eq!(Channel::VT.bit(), VT_BIT);
+}
+
+#[test]
+fn signal_helpers_expose_names_and_bits() {
+    assert_eq!(Signal::D0.name(), "D0");
+    assert_eq!(Signal::D1.name(), "D1");
+    assert_eq!(Signal::D2.name(), "D2");
+    assert_eq!(Signal::D3.name(), "D3");
+    assert_eq!(Signal::VT.name(), "VT");
+
+    assert_eq!(Signal::D0.bit(), D0_BIT);
+    assert_eq!(Signal::D1.bit(), D1_BIT);
+    assert_eq!(Signal::D2.bit(), D2_BIT);
+    assert_eq!(Signal::D3.bit(), D3_BIT);
+    assert_eq!(Signal::VT.bit(), VT_BIT);
 }
 
 #[test]
@@ -76,6 +92,7 @@ fn vt_only_means_vt_active_without_d0_to_d3() {
     };
 
     assert_eq!(snapshot.channel_bits(), 0);
+    assert!(!snapshot.any_channel_active());
     assert_eq!(snapshot.channel_state(), ChannelState::None);
     assert!(snapshot.vt_only());
 }
@@ -110,8 +127,8 @@ fn event_api_returns_edges_and_changed_mask() {
     };
 
     assert_eq!(event.changed_mask(), D3_BIT | VT_BIT);
-    assert_eq!(event.edge(Channel::D3), Some(Edge::Rising));
-    assert_eq!(event.edge(Channel::VT), Some(Edge::Rising));
+    assert_eq!(event.edge(Signal::D3), Some(Edge::Rising));
+    assert_eq!(event.edge(Signal::VT), Some(Edge::Rising));
     assert!(event.vt_rising());
     assert!(!event.vt_falling());
 }
@@ -143,24 +160,25 @@ fn poll_change_produces_events_not_printed_debug_lines() {
 #[test]
 fn channel_state_from_bits_matches_all_single_channels() {
     assert_eq!(
-        channel_state_from_bits(D0_BIT),
+        channel_state_from_channel_bits(D0_BIT),
         ChannelState::Single(Channel::D0)
     );
     assert_eq!(
-        channel_state_from_bits(D1_BIT),
+        channel_state_from_channel_bits(D1_BIT),
         ChannelState::Single(Channel::D1)
     );
     assert_eq!(
-        channel_state_from_bits(D2_BIT),
+        channel_state_from_channel_bits(D2_BIT),
         ChannelState::Single(Channel::D2)
     );
     assert_eq!(
-        channel_state_from_bits(D3_BIT),
+        channel_state_from_channel_bits(D3_BIT),
         ChannelState::Single(Channel::D3)
     );
-    assert_eq!(channel_state_from_bits(0), ChannelState::None);
+    assert_eq!(channel_state_from_channel_bits(0), ChannelState::None);
+    assert_eq!(channel_state_from_channel_bits(VT_BIT), ChannelState::None);
     assert_eq!(
-        channel_state_from_bits(D0_BIT | D3_BIT),
+        channel_state_from_channel_bits(D0_BIT | D3_BIT),
         ChannelState::Multiple(D0_BIT | D3_BIT)
     );
 }

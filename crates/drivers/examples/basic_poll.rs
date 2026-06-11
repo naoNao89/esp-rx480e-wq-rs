@@ -1,7 +1,7 @@
 use std::{cell::Cell, rc::Rc};
 
 use embedded_hal::digital::InputPin;
-use rx480e_wq_driver::{ChannelState, Rx480eWq};
+use rx480e_wq_driver::{ChannelState, Rx480eWq, Signal};
 
 #[derive(Clone)]
 struct MockPin {
@@ -49,6 +49,10 @@ fn main() {
     if let Some(event) = rx.poll_change().expect("sample pins") {
         if event.vt_rising() {
             println!("valid transmission started");
+        }
+
+        if event.edge(Signal::D0).is_some() {
+            println!("D0 changed");
         }
 
         match event.current.channel_state() {

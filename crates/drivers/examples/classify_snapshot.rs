@@ -10,6 +10,8 @@ fn main() {
     };
 
     assert_eq!(snapshot.channel_bits(), Channel::D0.bit());
+    assert!(snapshot.any_channel_active());
+    assert!(snapshot.is_valid_transmission());
     assert_eq!(snapshot.active_channel(), Some(Channel::D0));
     assert_eq!(snapshot.channel_state(), ChannelState::Single(Channel::D0));
     assert!(!snapshot.vt_only());

@@ -25,7 +25,8 @@ if let Some(event) = rx.poll_change()? {
         rx480e_wq_driver::ChannelState::Single(channel) => {
             // D0, D1, D2, or D3 is active.
             // VT is not returned as a ChannelState; use event.vt_rising(),
-            // event.vt_falling(), or snapshot.vt_only() for VT state.
+            // event.vt_falling(), event.edge(rx480e_wq_driver::Signal::VT),
+            // or event.current.vt_only() for VT state.
         }
         rx480e_wq_driver::ChannelState::None if event.current.vt_only() => {
             // VT active, but no D0-D3 channel output is active.
