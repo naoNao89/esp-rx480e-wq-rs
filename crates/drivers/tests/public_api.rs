@@ -2,8 +2,8 @@ use std::{cell::Cell, rc::Rc};
 
 use embedded_hal::digital::InputPin;
 use rx480e_wq_driver::{
-    channel_state_from_bits, Channel, ChannelState, Edge, Event, Rx480eWq, Snapshot, D0_BIT,
-    D1_BIT, D2_BIT, D3_BIT, VT_BIT,
+    Channel, ChannelState, D0_BIT, D1_BIT, D2_BIT, D3_BIT, Edge, Event, Rx480eWq, Snapshot, VT_BIT,
+    channel_state_from_bits,
 };
 
 #[derive(Clone)]

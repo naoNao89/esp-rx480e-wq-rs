@@ -8,7 +8,7 @@ use esp_hal::{
     main,
 };
 use esp_println::println;
-use rx480e_wq_driver::{channel_state_from_bits, ChannelState};
+use rx480e_wq_driver::{ChannelState, channel_state_from_bits};
 
 const SAMPLE_PERIOD_MS: u32 = 5;
 
