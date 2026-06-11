@@ -8,7 +8,7 @@ description = "no_std embedded-hal driver that classifies RX480E-WQ D0-D3/VT out
 repository = "https://github.com/naoNao89/esp-rx480e-wq-rs"
 homepage = "https://github.com/naoNao89/esp-rx480e-wq-rs"
 documentation = "https://docs.rs/rx480e-wq-driver"
-keywords = ["rx480", "rx480e", "embedded-hal", "gpio", "no-std"]
+keywords = ["rx480", "rx480e", "embedded-hal", "rf", "gpio"]
 categories = ["embedded", "hardware-support", "no-std"]
 
 [dependencies]

@@ -143,7 +143,7 @@ cargo test -p rx480e-wq-driver --target "$(rustc -vV | awk '/^host:/ { print $2 
 
 The explicit host target is useful because `.cargo/config.toml` defaults to the ESP32-C3 no-std target, which cannot run normal host tests.
 
-## Current firmware
+## ESP32-C3 debug firmware
 
 The firmware is a minimal RX480 debug reader. It reads:
 
@@ -228,7 +228,7 @@ Channel bit values:
 0b1000 = D3 active
 ```
 
-## Example output
+## Debug firmware example output
 
 ```text
 RX480-E-WQ ESP32-C3 reader started
