@@ -1,8 +1,8 @@
 # rx480e-wq-driver
 
-`no_std` `embedded-hal` driver helpers for RX480-E-WQ / RX480E-4 receiver modules.
+`rx480e-wq-driver` is a `no_std` `embedded-hal` driver that reads and classifies RX480E-WQ/RX480E-4 `D0`-`D3`/`VT` output pins as structured state.
 
-The crate is intentionally small: it samples the module's active-high `D0`-`D3` channel outputs and `VT` valid-transmission output, then reports snapshots and edge changes.
+The crate is intentionally small: it samples the module's active-high `D0`-`D3` channel outputs and `VT` valid-transmission output, then reports snapshots and edge changes. It is not an RF protocol decoder.
 
 It does not print serial logs by itself. Logs such as `EVENT: key=D0 vt=1 pulse_ms=...` belong to application firmware, not to this driver crate.
 
@@ -45,4 +45,4 @@ Limitations:
 - Active-high RX480 outputs are assumed.
 - Learned-code memory is internal to the RX480 module and cannot be read through this driver.
 - Pulse timing is board-specific; use your MCU timer or polling period outside this crate.
-- Learning, clearing, transmitting, replaying RF, serial logging, firmware flashing, and pulse-duration measurement are application/board-firmware responsibilities.
+- The crate does not decode raw RF, learn or clear RX480 remote codes, read learned-code memory, transmit, replay RF, print serial logs, flash firmware, or measure pulse duration by itself.

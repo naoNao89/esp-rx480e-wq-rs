@@ -4,7 +4,7 @@ License: MIT
 
 ![CI](https://github.com/naoNao89/esp-rx480e-wq-rs/actions/workflows/ci.yml/badge.svg)
 
-Rust workspace for reading and debugging an **RX480-E-WQ / RX480E-4** RF receiver module. It includes a HAL-agnostic `embedded-hal` driver crate and an **ESP32-C3** board firmware using `esp-hal`.
+Rust workspace for reading and debugging an **RX480-E-WQ / RX480E-4** RF receiver module. It includes a HAL-agnostic `embedded-hal` driver crate that classifies `D0`-`D3`/`VT` output pins as structured state, plus an **ESP32-C3** debug firmware using `esp-hal`.
 
 ![RX480-E-WQ ESP32-C3 wiring](assets/rx480e-wq-esp32-wiring.svg)
 
@@ -170,7 +170,7 @@ Driver crate:    Snapshot / Event / ChannelState
 Debug firmware:  serial logs, pulse_ms measurement, hardware smoke test
 ```
 
-The driver crate does not print serial logs, flash firmware, learn/clear RX480 codes, or measure pulse duration by itself. A crate user should handle structured state from `poll_change()` and decide what their application does with it.
+The driver crate does not decode raw RF, print serial logs, flash firmware, learn/clear RX480 codes, read learned-code memory, transmit/replay RF, or measure pulse duration by itself. A crate user should handle structured state from `poll_change()` and decide what their application does with it.
 
 Example driver usage:
 
