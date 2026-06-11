@@ -19,9 +19,17 @@ jobs:
           cp -R crates/drivers/Cargo.toml crates/drivers/README.md crates/drivers/src crates/drivers/tests crates/drivers/examples /tmp/rx480e-wq-driver/
           python3 - <<'PY'
           from pathlib import Path
+
+          workspace = Path('Cargo.toml').read_text()
+          version = next(
+              line.split('=', 1)[1].strip().strip('"')
+              for line in workspace.splitlines()
+              if line.strip().startswith('version = ')
+          )
+
           path = Path('/tmp/rx480e-wq-driver/Cargo.toml')
           text = path.read_text()
-          text = text.replace('version.workspace = true', 'version = "0.1.1"')
+          text = text.replace('version.workspace = true', f'version = "{version}"')
           text = text.replace('edition.workspace = true', 'edition = "2021"')
           text = text.replace('license.workspace = true', 'license = "MIT"')
           path.write_text(text)
